@@ -8,6 +8,8 @@ import math
 
 # Camera-related variables
 camera_pos = (0, 200, 300)  # Closer behind the bike for better perspective
+camera_mode = "third_person"  # "third_person" or "first_person"
+first_person_cam = (0, 3, 0)  # At rider's head level for first-person view
 
 fovY = 90  # Narrower FOV for better 3D perspective
 GRID_LENGTH = 600  # Length of grid lines
@@ -92,6 +94,30 @@ def draw_sphere(radius, slices=16, stacks=16):
     gluSphere(_get_quadric(), radius, slices, stacks)
 
 
+def draw_wheel(x, y, z, radius, width, rotation):
+    """Draw a wheel with visible rim effect and rotation"""
+    glPushMatrix()
+    glTranslatef(x, y, z)
+    glRotatef(90, 1, 0, 0)  # Orient wheel correctly
+    glRotatef(rotation, 0, 0, 1)  # Apply rotation
+    
+    # Tire (outer cylinder)
+    glColor3f(0.1, 0.1, 0.1)  # Black tire
+    gluCylinder(_get_quadric(), radius, radius, width, 16, 1)
+    
+    # Rim (inner cylinder)
+    glColor3f(0.8, 0.8, 0.9)  # Chrome rim
+    gluCylinder(_get_quadric(), radius-2, radius-2, width+1, 16, 1)
+    
+    # Spokes effect using disks
+    glColor3f(0.6, 0.6, 0.6)  # Gray spokes
+    gluDisk(_get_quadric(), 0, radius-4, 16, 1)
+    glTranslatef(0, 0, width)
+    gluDisk(_get_quadric(), 0, radius-4, 16, 1)
+    
+    glPopMatrix()
+
+
 def draw_bike():
     # Bike positioned with its origin at ground contact point under the seat
     glPushMatrix()
@@ -119,11 +145,40 @@ def draw_bike():
     # Apply banking rotation
     glRotatef(banking_angle, 0, 0, 1)
 
-    # Main frame: simple black square body
-    glColor3f(0.0, 0.0, 0.0)  # Black
+    # Main frame: improved geometry using cylinders instead of blocky cube
+    glColor3f(0.2, 0.2, 0.2)  # Dark gray
+    # Main horizontal frame bar
     glPushMatrix()
-    glTranslatef(0, 0, 10)
-    glutSolidCube(20)  # Simple square
+    glRotatef(90, 0, 1, 0)
+    gluCylinder(_get_quadric(), 1.5, 1.5, 16, 8, 1)
+    glPopMatrix()
+    
+    # Vertical frame supports
+    glPushMatrix()
+    glTranslatef(0, 4, 8)
+    gluCylinder(_get_quadric(), 1.0, 1.0, 8, 8, 1)
+    glPopMatrix()
+    
+    glPushMatrix()
+    glTranslatef(0, -4, 8)
+    gluCylinder(_get_quadric(), 1.0, 1.0, 8, 8, 1)
+    glPopMatrix()
+    
+    # Cross brace
+    glPushMatrix()
+    glTranslatef(0, 0, 12)
+    glRotatef(90, 0, 1, 0)
+    gluCylinder(_get_quadric(), 0.8, 0.8, 8, 8, 1)
+    glPopMatrix()
+
+    # Handlebars (horizontal cylinder) - with steering effect
+    glColor3f(0.4, 0.4, 0.4)  # Gray handlebars
+    glPushMatrix()
+    glTranslatef(0, 0, 3)
+    glRotatef(90, 0, 1, 0)
+    # Apply steering rotation to handlebars
+    glRotatef(banking_angle * 0.5, 0, 0, 1)  # Half the banking angle for subtle effect
+    gluCylinder(_get_quadric(), 0.3, 0.3, 4, 8, 1)
     glPopMatrix()
 
     # Fuel tank: bright blue sphere in front-top
@@ -213,8 +268,8 @@ def draw_bike():
     glPushMatrix()
     glColor3f(0.8, 0.8, 0.9)
     glTranslatef(0, 28, wheel_radius)
-    glRotatef(90, 0, 1, 0)  # FIXED: same alignment
-    glRotatef(wheel_rotation, 0, 0, 1)  # same rotation
+    glRotatef(90, 0, 1, 0)  
+    glRotatef(wheel_rotation, 0, 0, 1) 
     draw_cylinder(wheel_radius-2, wheel_radius-2, wheel_width+1)
     glPopMatrix()
 
@@ -222,8 +277,8 @@ def draw_bike():
     glPushMatrix()
     glColor3f(0.8, 0.3, 1.0)
     glTranslatef(0, -28, wheel_radius)
-    glRotatef(90, 0, 1, 0)  # FIXED: same alignment
-    glRotatef(wheel_rotation, 0, 0, 1)  # same rotation
+    glRotatef(90, 0, 1, 0)  
+    glRotatef(wheel_rotation, 0, 0, 1)  
     draw_cylinder(wheel_radius, wheel_radius, wheel_width)
     glPopMatrix()
     
@@ -231,8 +286,8 @@ def draw_bike():
     glPushMatrix()
     glColor3f(0.8, 0.8, 0.9)
     glTranslatef(0, -28, wheel_radius)
-    glRotatef(90, 0, 1, 0)  # FIXED: same alignment
-    glRotatef(wheel_rotation, 0, 0, 1)  # same rotation
+    glRotatef(90, 0, 1, 0)  # 
+    glRotatef(wheel_rotation, 0, 0, 1) 
     draw_cylinder(wheel_radius-2, wheel_radius-2, wheel_width+1)
     glPopMatrix()
 
@@ -240,15 +295,15 @@ def draw_bike():
     glPushMatrix()
     glColor3f(0.6, 0.6, 0.65)
     glTranslatef(0, 28, wheel_radius-1)
-    glRotatef(90, 0, 1, 0)  # FIXED: same alignment
-    glRotatef(wheel_rotation, 0, 0, 1)  # same rotation
+    glRotatef(90, 0, 1, 0)  
+    glRotatef(wheel_rotation, 0, 0, 1)  
     draw_cylinder(8, 8, 1)
     glPopMatrix()
     glPushMatrix()
     glColor3f(0.6, 0.6, 0.65)
     glTranslatef(0, -28, wheel_radius-1)
-    glRotatef(90, 0, 1, 0)  # FIXED: same alignment
-    glRotatef(wheel_rotation, 0, 0, 1)  # same rotation
+    glRotatef(90, 0, 1, 0) 
+    glRotatef(wheel_rotation, 0, 0, 1) 
     draw_cylinder(8, 8, 1)
     glPopMatrix()
 
@@ -324,6 +379,70 @@ def draw_bike():
         draw_sphere(5)
         glPopMatrix()
 
+    glPopMatrix()
+
+
+def draw_rider():
+    """Draw a simple humanoid rider sitting on the bike"""
+    glPushMatrix()
+    
+    # Use smooth x position if transitioning, otherwise use current lane
+    if 'player_x' in globals() and 'lane_transition_t' in globals() and lane_transition_t > 0.0:
+        current_x = player_x
+    else:
+        current_x = LANES_X[player_lane]
+    
+    glTranslatef(current_x, player_y, player_z + 25)  # Position on bike seat
+    
+    # Head (sphere)
+    glColor3f(0.9, 0.7, 0.6)  # Skin color
+    glPushMatrix()
+    glTranslatef(0, 0, 8)
+    glutSolidSphere(6, 8, 8)
+    glPopMatrix()
+    
+    # Body (scaled cube)
+    glColor3f(0.2, 0.4, 0.8)  # Blue shirt
+    glPushMatrix()
+    glTranslatef(0, 0, 2)
+    glScalef(0.8, 0.4, 1.2)
+    glutSolidCube(12)
+    glPopMatrix()
+    
+    # Arms holding handlebars
+    glColor3f(0.9, 0.7, 0.6)  # Skin color
+    # Left arm
+    glPushMatrix()
+    glTranslatef(-8, 0, 6)
+    glRotatef(45, 0, 0, 1)
+    glRotatef(90, 1, 0, 0)
+    gluCylinder(_get_quadric(), 1.5, 1.5, 12, 6, 1)
+    glPopMatrix()
+    
+    # Right arm
+    glPushMatrix()
+    glTranslatef(8, 0, 6)
+    glRotatef(-45, 0, 0, 1)
+    glRotatef(90, 1, 0, 0)
+    gluCylinder(_get_quadric(), 1.5, 1.5, 12, 6, 1)
+    glPopMatrix()
+    
+    # Legs
+    glColor3f(0.1, 0.1, 0.1)  # Black pants
+    # Left leg
+    glPushMatrix()
+    glTranslatef(-3, 0, -4)
+    glRotatef(15, 0, 0, 1)
+    gluCylinder(_get_quadric(), 2, 2, 12, 6, 1)
+    glPopMatrix()
+    
+    # Right leg
+    glPushMatrix()
+    glTranslatef(3, 0, -4)
+    glRotatef(-15, 0, 0, 1)
+    gluCylinder(_get_quadric(), 2, 2, 12, 6, 1)
+    glPopMatrix()
+    
     glPopMatrix()
 
 
@@ -532,7 +651,7 @@ def update_game(dt):
     if hop_t > 0.0:
         hop_t = max(0.0, hop_t - dt)
         t = 1.0 - (hop_t / hop_duration)  # 0..1
-        player_z = 120.0 * (4*t*(1-t))  # Increased height from 70 to 120
+        player_z = 120.0 * (4*t*(1-t)) 
     else:
         player_z = 0.0
 
@@ -553,7 +672,7 @@ def update_game(dt):
 # ---------------- Input handlers ----------------
 
 def keyboardListener(key, x, y):
-    global hop_charges, hop_t, high_score
+    global hop_charges, hop_t, high_score, camera_mode
     if key == b' ':
         if hop_charges > 0 and hop_t <= 0.0:
             hop_charges -= 1
@@ -562,6 +681,10 @@ def keyboardListener(key, x, y):
         if distance_travelled > high_score:
             high_score = distance_travelled
         reset_game()
+    if key == b'f' or key == b'F':
+        # Toggle camera mode
+        camera_mode = "first_person" if camera_mode == "third_person" else "third_person"
+        print(f"Camera mode: {camera_mode}")
 
 
 def specialKeyListener(key, x, y):
@@ -589,9 +712,30 @@ def setupCamera():
     gluPerspective(fovY, 1.25, 0.1, 1500)
     glMatrixMode(GL_MODELVIEW)
     glLoadIdentity()
-    x, y, z = camera_pos
-    # Look straight ahead from behind the bike, not at the bike itself
-    gluLookAt(x, y, z, 0, 0, 0, 0, 0, 1)
+
+    if camera_mode == "third_person":
+        x, y, z = camera_pos
+        gluLookAt(x, y, z, 0, 0, 0, 0, 0, 1)
+    else:  # first_person
+        # Get smooth player lane/position
+        if lane_transition_t > 0.0:
+            bike_x = player_x
+        else:
+            bike_x = LANES_X[player_lane]
+        bike_y = player_y
+        bike_z = player_z
+
+        # Place camera at rider's head/eyes above seat
+        cam_x = bike_x
+        cam_y = bike_y  # rider's current y
+        cam_z = bike_z + 36
+
+        # Look FORWARD: in -Y direction (to oncoming cars/road ahead)
+        look_x = bike_x
+        look_y = bike_y - 100  
+        look_z = cam_z - 2     
+
+        gluLookAt(cam_x, cam_y, cam_z, look_x, look_y, look_z, 0, 0, 1)
 
 
 def idle():
@@ -657,6 +801,7 @@ def showScreen():
     t = time.perf_counter()
 
     draw_bike()  # bike at fixed y; draw after ground
+    draw_rider() # rider on bike
 
     # Collect and sort renders
     # Far (low y) first, near (high y) last
@@ -668,6 +813,7 @@ def showScreen():
     # HUD
     draw_text(10, 770, f"Distance: {int(distance_travelled)}  High: {int(high_score)}")
     draw_text(10, 740, f"Lane: {player_lane+1}/3  Hops: {hop_charges}")
+    draw_text(10, 710, f"Camera: {camera_mode.upper()} (Press F to toggle)")
     now = time.perf_counter()
     statuses = []
     if now < active['nitro_until']:
@@ -680,7 +826,7 @@ def showScreen():
         statuses.append('x2')
     if now < active['magnet_until']:
         statuses.append('MAG')
-    draw_text(10, 710, " ".join(statuses) if statuses else "")
+    draw_text(10, 680, " ".join(statuses) if statuses else "")
 
     glutSwapBuffers()
 
@@ -692,13 +838,19 @@ def main():
     glutInitDisplayMode(GLUT_DOUBLE | GLUT_RGB | GLUT_DEPTH)
     glutInitWindowSize(1000, 800)
     glutInitWindowPosition(0, 0)
-    glutCreateWindow(b"CSE423 Endless Runner (OpenGL)")
+    glutCreateWindow(b"CSE423 Endless Runner (OpenGL) - Enhanced Bike Model")
 
     glutDisplayFunc(showScreen)
     glutKeyboardFunc(keyboardListener)
     glutSpecialFunc(specialKeyListener)
     glutMouseFunc(mouseListener)
     glutIdleFunc(idle)
+    
+    print("Enhanced Bike Simulation Controls:")
+    print("Arrow Keys: Lane switching (left/right)")
+    print("Spacebar: Hop/Jump")
+    print("F: Toggle camera view (third-person/first-person)")
+    print("R: Reset game")
 
     glutMainLoop()
 
